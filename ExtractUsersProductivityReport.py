@@ -2,7 +2,7 @@ import sys
 import configparser
 import pyodbc
 import datetime
-import prettytable
+from prettytable import from_db_cursor
 
 def main():
     try:
@@ -42,9 +42,9 @@ def main():
                                 "inner join [wms_Jobs] as \"jobs\" " \
                                     "on tblNC.[Publication Number] = REPLACE(jobs.ExternalReference,'.pdf','')" \
                                 "inner join [tblRefTaggerProductivity] as \"Prod\" " \
-                                    "on jobs.JobName = Prod.BatchName" \
-                                "where [Publication Number] is NULL " \
-                                    "and DateProcessed between '2019-09-10' and '2019-09-12'" \
+                                    "on jobs.JobName = Prod.BatchName " \
+                                "where [Publication Number] is not NULL " \
+                                    "and DateProcessed between '" + input_date_from + "' and '" + input_date_to + "'" \
                                 "group by [Publication Number], " \
                                     "JobName, " \
                                     "ExternalReference, " \
@@ -52,7 +52,7 @@ def main():
                                     "TotalReference, " \
                                     "TotalCheck, " \
                                     "TotalDedup" \
-                                "order by [Date Processed] asc"
+                                " order by [Date Processed] asc"
                 use_database = database_name1 if input_facility_code == '1' else database_name2
                 #breakpoint()
                 conn = pyodbc.connect('Driver={SQL Server};'
@@ -61,12 +61,14 @@ def main():
                                       'UID=' + database_user_id + ';'
                                       'PWD=' + database_password + ';'
                                       'Trusted_Connection=No')
+                #breakpoint()
 
                 cursor = conn.cursor()
                 cursor.execute(sql_statement)
 
-                for row in cursor:
-                    print(row)
+                print(from_db_cursor((cursor)))
+                #for row in cursor:
+                #    print(row)
 
     except Exception as e:
         print(f"Error occurred: {e}")
